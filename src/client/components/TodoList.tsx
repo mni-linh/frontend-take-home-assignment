@@ -4,6 +4,8 @@ import * as Checkbox from '@radix-ui/react-checkbox'
 
 import { api } from '@/utils/client/api'
 
+import { useAutoAnimate } from '@formkit/auto-animate/react'
+
 /**
  * QUESTION 3:
  * -----------
@@ -63,35 +65,121 @@ import { api } from '@/utils/client/api'
  *  - https://auto-animate.formkit.com
  */
 
-export const TodoList = () => {
+// Create type props for todo list
+type TodoListProps = {
+  status: string
+}
+
+export const TodoList = (props: TodoListProps) => {
+  // Question 5: Animate your todo list using @formkit/auto-animate package
+  const [list] = useAutoAnimate()
+
   const { data: todos = [] } = api.todo.getAll.useQuery({
-    statuses: ['completed', 'pending'],
+    statuses:
+      (props.status === 'all' && ['completed', 'pending']) ||
+      ([props.status] as Array<'pending' | 'completed'>),
   })
 
+  const statusContext = api.useContext()
+
+  // Question 3: Update todo's status
+  const { mutate: updateTodoStatus, isLoading: isUpdatingTodo } =
+    api.todoStatus.update.useMutation({
+      onSuccess: () => {
+        statusContext.todo.getAll.refetch()
+      },
+    })
+
+  // Question 4: Delete todo item
+  const { mutate: deleteTodoItem, isLoading: isDeletingTodo } =
+    api.todo.delete.useMutation({
+      onSuccess: () => {
+        statusContext.todo.getAll.refetch()
+      },
+    })
+
+  // Question 3 + Question 4: Generic function to handle both status update and to-do deletion
+  const handleTodoAction = (
+    actionType: 'update' | 'delete',
+    todoId: number,
+    checked?: boolean | string
+  ) => {
+    if (
+      (actionType === 'update' && !isUpdatingTodo) ||
+      (actionType === 'delete' && !isDeletingTodo)
+    ) {
+      if (actionType === 'update') {
+        const status = checked ? 'completed' : 'pending'
+        updateTodoStatus({
+          todoId,
+          status,
+        })
+      } else if (actionType === 'delete') {
+        deleteTodoItem({ id: todoId })
+      }
+    }
+  }
+
+  // Question 3: handleTodoAction function to update todo of state
+  const handleChangeTodoStatus = (
+    checked: boolean | string,
+    todoId: number
+  ) => {
+    handleTodoAction('update', todoId, checked)
+  }
+
+  // Question 4: handleTodoAction function to delete todo item
+  const handleDeleteTodoItem = (id: number) => {
+    handleTodoAction('delete', id)
+  }
   return (
-    <ul className="grid grid-cols-1 gap-y-3">
+    <ul className="grid grid-cols-1 gap-y-3" ref={list}>
       {todos.map((todo) => (
         <li key={todo.id}>
-          <div className="flex items-center rounded-12 border border-gray-200 px-4 py-3 shadow-sm">
-            <Checkbox.Root
-              id={String(todo.id)}
-              className="flex h-6 w-6 items-center justify-center rounded-6 border border-gray-300 focus:border-gray-700 focus:outline-none data-[state=checked]:border-gray-700 data-[state=checked]:bg-gray-700"
-            >
-              <Checkbox.Indicator>
-                <CheckIcon className="h-4 w-4 text-white" />
-              </Checkbox.Indicator>
-            </Checkbox.Root>
-
-            <label className="block pl-3 font-medium" htmlFor={String(todo.id)}>
-              {todo.body}
-            </label>
+          <div
+            className={`flex items-center justify-between rounded-12 border border-gray-200 px-4 py-3 shadow-sm	 ${
+              todo.status === 'completed' && 'bg-grey-50'
+            }`}
+          >
+            <div className="check-icon-section flex">
+              <Checkbox.Root
+                id={String(todo.id)}
+                className=" flex h-6 w-6 items-center justify-center rounded-6 border border-gray-300 focus:border-gray-700 focus:outline-none data-[state=checked]:border-gray-700 data-[state=checked]:bg-gray-700"
+                checked={todo.status === 'completed'}
+                onCheckedChange={(isChecked) =>
+                  handleChangeTodoStatus(isChecked, todo.id)
+                }
+              >
+                <Checkbox.Indicator>
+                  <CheckIcon className="h-4 w-4 text-white" />
+                </Checkbox.Indicator>
+              </Checkbox.Root>
+              <label
+                className={`block pl-3 font-medium text-gray-700 ${
+                  todo.status === 'completed'
+                    ? 'text-gray-500 line-through'
+                    : ''
+                }`}
+                htmlFor={String(todo.id)}
+              >
+                {todo.body}
+              </label>
+            </div>
+            <div className="remove-button-section">
+              <button
+                className="p-1"
+                onClick={() => handleDeleteTodoItem(todo.id)}
+              >
+                <XMarkIcon className="h-7 w-7 text-gray-700" />
+              </button>
+            </div>
           </div>
         </li>
       ))}
     </ul>
   )
 }
-
+// Quesion 4: XMarkIcon and CheckIcon
 const XMarkIcon = (props: SVGProps<SVGSVGElement>) => {
   return (
     <svg

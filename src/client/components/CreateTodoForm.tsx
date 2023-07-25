@@ -34,9 +34,26 @@ export const CreateTodoForm = () => {
         apiContext.todo.getAll.refetch()
       },
     })
+  // Question 2: Add new to-do with keyboard access and Enter key
+  const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    if (todoBody.trim() !== '') {
+      try {
+        await createTodo({
+          body: todoBody,
+        })
+        setTodoBody('')
+      } catch (error) {
+        console.error('Error creating todo:', error)
+      }
+    }
+  }
 
   return (
-    <form className="group flex items-center justify-between rounded-12 border border-gray-200 py-2 pr-4 focus-within:border-gray-400">
+    <form
+      className="group flex items-center justify-between rounded-12 border border-gray-200 py-2 pr-4 focus-within:border-gray-400"
+      onSubmit={handleFormSubmit}
+    >
       <label htmlFor={TODO_INPUT_ID} className="sr-only">
         Add todo
       </label>
@@ -55,12 +72,8 @@ export const CreateTodoForm = () => {
       <button
         type="button"
         disabled={isCreatingTodo}
-        onClick={() => {
-          createTodo({
-            body: todoBody,
-          })
-          setTodoBody('')
-        }}
+        // Question 1: Style the "Add" button so that it looks like the design in Figma.
+        className="rounded-full bg-gray-700 px-5 py-1 text-sm text-white"
       >
         Add
       </button>
