@@ -73,7 +73,7 @@ export const CreateTodoForm = () => {
         type="button"
         disabled={isCreatingTodo}
         // Question 1: Style the "Add" button so that it looks like the design in Figma.
-        className="rounded-full bg-gray-700 px-5 py-1 text-sm text-white"
+        className="rounded-full bg-gray-700 px-5 py-2 text-center text-sm font-bold leading-5 text-white"
       >
         Add
       </button>
